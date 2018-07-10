@@ -450,7 +450,7 @@ public:
     void setRegister(QString regName, QString regValue);
     QJsonDocument getStack(int size = 0x40);
     QJsonDocument getBacktrace();
-    void startDebug();
+    void startDebug(QString stdin, QString stdout);
     void startEmulation();
     void attachDebug(int pid);
     void stopDebug();

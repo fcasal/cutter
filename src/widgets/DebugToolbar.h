@@ -2,6 +2,7 @@
 
 #include <QToolBar>
 #include "Cutter.h"
+#include <QTemporaryFile>
 
 class MainWindow;
 
@@ -16,6 +17,8 @@ private:
     MainWindow *main;
     QAction *actionStart;
     QAction *actionStartEmul;
+    QTemporaryFile *stdin = nullptr;
+    QTemporaryFile *stdout = nullptr;
 
 private slots:
     void continueUntilMain();

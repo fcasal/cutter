@@ -6,12 +6,13 @@
 #include <QPainter>
 #include <QToolButton>
 #include <QMenu>
+#include <QFileSystemWatcher>
 
-DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) :
-    QToolBar(parent),
-    main(main)
+DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) : QToolBar(parent),
+                                                                main(main)
 {
     setObjectName("debugToolbar");
+    QFileSystemWatcher *watcher = new QFileSystemWatcher();
     QIcon startDebugIcon = QIcon(":/img/icons/play_light_debug.svg");
     QIcon startEmulIcon = QIcon(":/img/icons/play_light_emul.svg");
     QIcon startAttachIcon = QIcon(":/img/icons/play_light_attach.svg");
@@ -61,39 +62,62 @@ DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) :
     addAction(actionStep);
     addAction(actionStepOver);
 
-    connect(actionStop,              &QAction::triggered, Core(), &CutterCore::stopDebug);
-    connect(actionStop,              &QAction::triggered, [=](){
-                                                                actionContinue->setVisible(true);
-                                                                actionStart->setVisible(true);
-                                                                actionStartEmul->setVisible(true);
-                                                                actionAttach->setVisible(true);
-                                                                actionContinueUntilMain->setVisible(true);
-                                                                actionContinueUntilCall->setVisible(true);
-                                                                this->colorToolbar(false);
-                                                                });
-    connect(actionStep,              &QAction::triggered, Core(), &CutterCore::stepDebug);
-    connect(actionStart,             &QAction::triggered, Core(), &CutterCore::startDebug);
-    connect(actionStart,             &QAction::triggered, [=](){
-                                                                this->colorToolbar(true);
-                                                                actionAttach->setVisible(false);
-                                                                actionStartEmul->setVisible(false);
-                                                                });
-    connect(actionAttach,           &QAction::triggered, this,   &DebugToolbar::attachProcessDialog);
-    connect(actionStartEmul,        &QAction::triggered, Core(), &CutterCore::startEmulation);
-    connect(actionStartEmul,        &QAction::triggered, [=](){
-                                                                actionContinue->setVisible(false);
-                                                                actionStart->setVisible(false);
-                                                                actionAttach->setVisible(false);
-                                                                actionContinueUntilMain->setVisible(false);
-                                                                actionContinueUntilCall->setVisible(false);
-                                                                continueUntilButton->setDefaultAction(actionContinueUntilSyscall);
-                                                                this->colorToolbar(true);
-                                                                });
-    connect(actionStepOver,          &QAction::triggered, Core(), &CutterCore::stepOverDebug);
-    connect(actionContinue,          &QAction::triggered, Core(), &CutterCore::continueDebug);
-    connect(actionContinueUntilMain, &QAction::triggered, this,   &DebugToolbar::continueUntilMain);
+    connect(actionStop, &QAction::triggered, Core(), &CutterCore::stopDebug);
+    connect(actionStop, &QAction::triggered, [=]() {
+        actionContinue->setVisible(true);
+        actionStart->setVisible(true);
+        actionStartEmul->setVisible(true);
+        actionAttach->setVisible(true);
+        actionContinueUntilMain->setVisible(true);
+        actionContinueUntilCall->setVisible(true);
+        this->colorToolbar(false);
+    });
+    connect(actionStep, &QAction::triggered, Core(), &CutterCore::stepDebug);
+    connect(actionStart, &QAction::triggered, this, [=]() {
+        if (stdin != nullptr) {
+            // watcher->removePath(stdin->fileName());
+            delete stdin;
+        }
+        if (stdout != nullptr) {
+            watcher->removePath(stdout->fileName());
+            delete stdout;
+        }
+        stdin = new QTemporaryFile();
+        stdout = new QTemporaryFile();
+        // watcher->addPath(stdin->fileName());
+        if (stdin->open() && stdout->open()) {
+            watcher->addPath(stdout->fileName());
+            Core()->startDebug(stdin->fileName(), stdout->fileName());
+        } else {
+            qWarning() << "Can't open temporary files for debug stdio";
+        }
+    });
+    connect(actionStart, &QAction::triggered, [=]() {
+        this->colorToolbar(true);
+        actionAttach->setVisible(false);
+        actionStartEmul->setVisible(false);
+    });
+    connect(actionAttach, &QAction::triggered, this, &DebugToolbar::attachProcessDialog);
+    connect(actionStartEmul, &QAction::triggered, Core(), &CutterCore::startEmulation);
+    connect(actionStartEmul, &QAction::triggered, [=]() {
+        actionContinue->setVisible(false);
+        actionStart->setVisible(false);
+        actionAttach->setVisible(false);
+        actionContinueUntilMain->setVisible(false);
+        actionContinueUntilCall->setVisible(false);
+        continueUntilButton->setDefaultAction(actionContinueUntilSyscall);
+        this->colorToolbar(true);
+    });
+    connect(actionStepOver, &QAction::triggered, Core(), &CutterCore::stepOverDebug);
+    connect(actionContinue, &QAction::triggered, Core(), &CutterCore::continueDebug);
+    connect(actionContinueUntilMain, &QAction::triggered, this, &DebugToolbar::continueUntilMain);
     connect(actionContinueUntilCall, &QAction::triggered, Core(), &CutterCore::continueUntilCall);
-    connect(actionContinueUntilSyscall, &QAction::triggered, Core(),&CutterCore::continueUntilSyscall);
+    connect(actionContinueUntilSyscall, &QAction::triggered, Core(), &CutterCore::continueUntilSyscall);
+    connect(watcher, &QFileSystemWatcher::fileChanged, this, [=]() {
+        QTextStream ts(stdout);
+        QString output = ts.readAll();
+        main->addOutput(output);
+    });
 }
 
 void DebugToolbar::continueUntilMain()
