@@ -609,7 +609,8 @@ void MainWindow::showDebugDocks()
                                             registersDock,
                                             backtraceDock,
                                             memoryMapDock,
-                                            breakpointDock
+                                            breakpointDock,
+                                            consoleDock
                                             };
     for (auto w : dockWidgets) {
         if (debugDocks.contains(w)) {

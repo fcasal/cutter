@@ -12,7 +12,8 @@ DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) : QToolBar(parent)
                                                                 main(main)
 {
     setObjectName("debugToolbar");
-    QFileSystemWatcher *watcher = new QFileSystemWatcher();
+    QFileSystemWatcher *watcherOut = new QFileSystemWatcher();
+    QFileSystemWatcher *watcherErr = new QFileSystemWatcher();
     QIcon startDebugIcon = QIcon(":/img/icons/play_light_debug.svg");
     QIcon startEmulIcon = QIcon(":/img/icons/play_light_emul.svg");
     QIcon startAttachIcon = QIcon(":/img/icons/play_light_attach.svg");
@@ -75,21 +76,28 @@ DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) : QToolBar(parent)
     connect(actionStep, &QAction::triggered, Core(), &CutterCore::stepDebug);
     connect(actionStart, &QAction::triggered, this, [=]() {
         if (stdin != nullptr) {
-            // watcher->removePath(stdin->fileName());
+            // watcherOut->removePath(stdin->fileName());
             delete stdin;
         }
         if (stdout != nullptr) {
-            watcher->removePath(stdout->fileName());
+            watcherOut->removePath(stdout->fileName());
             delete stdout;
+        }
+        if (stderr != nullptr) {
+            watcherOut->removePath(stderr->fileName());
+            delete stderr;
         }
         stdin = new QTemporaryFile();
         stdout = new QTemporaryFile();
-        // watcher->addPath(stdin->fileName());
-        if (stdin->open() && stdout->open()) {
-            watcher->addPath(stdout->fileName());
-            Core()->startDebug(stdin->fileName(), stdout->fileName());
+        stderr = new QTemporaryFile();
+        // watcherOut->addPath(stdin->fileName());
+        if (stdin->open() && stdout->open() && stderr->open()) {
+            watcherOut->addPath(stdout->fileName());
+            watcherErr->addPath(stderr->fileName());
+            Core()->startDebug(stdin->fileName(), stdout->fileName(), stderr->fileName());
+            main->addOutput("Debugger profile: " + Core()->cmd("e dbg.profile"));
         } else {
-            qWarning() << "Can't open temporary files for debug stdio";
+            qWarning() << "Can't open temporary files for debugging stdio";
         }
     });
     connect(actionStart, &QAction::triggered, [=]() {
@@ -113,11 +121,8 @@ DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) : QToolBar(parent)
     connect(actionContinueUntilMain, &QAction::triggered, this, &DebugToolbar::continueUntilMain);
     connect(actionContinueUntilCall, &QAction::triggered, Core(), &CutterCore::continueUntilCall);
     connect(actionContinueUntilSyscall, &QAction::triggered, Core(), &CutterCore::continueUntilSyscall);
-    connect(watcher, &QFileSystemWatcher::fileChanged, this, [=]() {
-        QTextStream ts(stdout);
-        QString output = ts.readAll();
-        main->addOutput(output);
-    });
+    connect(watcherOut, &QFileSystemWatcher::fileChanged, this, &DebugToolbar::printStdout);
+    connect(watcherErr, &QFileSystemWatcher::fileChanged, this, &DebugToolbar::printStderr);
 }
 
 void DebugToolbar::continueUntilMain()
@@ -152,4 +157,18 @@ void DebugToolbar::attachProcess(int pid)
     this->actionStartEmul->setVisible(false);
     // attach
     Core()->attachDebug(pid);
+}
+
+void DebugToolbar::printStdout()
+{
+    QTextStream ts(stdout);
+    QString output = ts.readAll().remove(QChar(QChar::Null));
+    main->addOutput(output);
+}
+
+void DebugToolbar::printStderr()
+{
+    QTextStream ts(stderr);
+    QString output = ts.readAll().remove(QChar(QChar::Null));
+    main->addOutput(output);
 }

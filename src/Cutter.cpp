@@ -722,14 +722,15 @@ void CutterCore::setRegister(QString regName, QString regValue)
     emit registersChanged();
 }
 
-void CutterCore::startDebug(QString stdin, QString stdout)
+void CutterCore::startDebug(QString stdin, QString stdout, QString stderr)
 {
     if (!currentlyDebugging) {
         offsetPriorDebugging = getOffset();
     }
     // redirect stdin and stdout so we can manipulate them
     // cmd("dor stdin=" + stdin + ",stdout=" + stdout + "; ood");
-    cmd("dor stdout=" + stdout + "; ood");
+    QString rarun2Cmd = "dor stdout=%1,stderr=%2; ood";
+    cmd(rarun2Cmd.arg(stdout).arg(stderr));
     emit registersChanged();
     if (!currentlyDebugging) {
         setConfig("asm.flags", false);

@@ -19,10 +19,13 @@ private:
     QAction *actionStartEmul;
     QTemporaryFile *stdin = nullptr;
     QTemporaryFile *stdout = nullptr;
+    QTemporaryFile *stderr = nullptr;
 
 private slots:
     void continueUntilMain();
     void colorToolbar(bool p);
     void attachProcessDialog();
     void attachProcess(int pid);
+    void printStdout();
+    void printStderr();
 };
