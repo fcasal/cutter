@@ -511,6 +511,7 @@ public:
     void continueUntilDebug(QString offset);
     void stepDebug();
     void stepOverDebug();
+    void stepOutDebug();
     void toggleBreakpoint(RVA addr);
     void toggleBreakpoint(QString addr);
     void delBreakpoint(RVA addr);
