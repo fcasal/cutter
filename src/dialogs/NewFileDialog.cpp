@@ -364,7 +364,7 @@ void NewFileDialog::loadFile(const QString &filename)
     InitialOptions options;
     options.filename = ioFile;
     main->openNewFile(options);
-    
+
     close();
 }
 
