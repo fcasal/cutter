@@ -46,11 +46,10 @@ DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) :
     startButton->setPopupMode(QToolButton::MenuButtonPopup);
     connect(startButton, &QToolButton::triggered, startButton, &QToolButton::setDefaultAction);
     QMenu *startMenu = new QMenu;
-    // startMenu->addAction(actionStart);
+    startMenu->addAction(actionStart);
     startMenu->addAction(actionStartEmul);
-    // startMenu->addAction(actionAttach);
-    // startButton->setDefaultAction(actionStart);
-    startButton->setDefaultAction(actionStartEmul);
+    startMenu->addAction(actionAttach);
+    startButton->setDefaultAction(actionStart);
     startButton->setMenu(startMenu);
 
     QToolButton *continueUntilButton = new QToolButton;
@@ -101,7 +100,6 @@ DebugToolbar::DebugToolbar(MainWindow *main, QWidget *parent) :
     connect(actionAttach, &QAction::triggered, this, &DebugToolbar::attachProcessDialog);
     connect(actionStartEmul, &QAction::triggered, Core(), &CutterCore::startEmulation);
     connect(actionStartEmul, &QAction::triggered, [=]() {
-        actionContinue->setVisible(false);
         actionStart->setVisible(false);
         actionAttach->setVisible(false);
         actionContinueUntilMain->setVisible(false);
