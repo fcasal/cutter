@@ -138,6 +138,7 @@ SectionsWidget::SectionsWidget(MainWindow *main, QAction *action) :
     main(main)
 {
     setObjectName("SectionsWidget");
+    // aasd
     setWindowTitle(QStringLiteral("Sections"));
 
     sectionsTable = new QTreeView;
