@@ -139,7 +139,7 @@ SectionsWidget::SectionsWidget(MainWindow *main, QAction *action) :
 {
     setObjectName("SectionsWidget");
     setWindowTitle(QStringLiteral("Sections"));
-
+// asdasd
     sectionsTable = new QTreeView;
     sectionsModel = new SectionsModel(&sections, this);
     auto proxyModel = new SectionsProxyModel(sectionsModel, this);
